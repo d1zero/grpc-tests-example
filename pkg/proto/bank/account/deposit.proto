@@ -1,11 +1,11 @@
 syntax = "proto3";
 
 package account;
-
-option go_package = ".;account";
+option go_package = "pkg/proto/bank/account";
 
 message DepositRequest {
   float amount = 1;
+  string wallet = 2;
 }
 
 message DepositResponse {
