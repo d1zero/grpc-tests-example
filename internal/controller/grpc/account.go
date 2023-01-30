@@ -8,19 +8,27 @@ import (
 
 type AccountController struct {
 	pb.UnimplementedDepositServiceServer
-	accountService domain.Account
+	AccountService domain.Account
 }
 
-func (c *AccountController) Deposit(ctx context.Context, req *pb.DepositRequest) (res *pb.DepositResponse, err error) {
-	err = c.accountService.Deposit(ctx, req.GetWallet(), req.GetAmount())
+func (c *AccountController) Deposit(ctx context.Context, req *pb.DepositRequest) (*pb.DepositResponse, error) {
+	result := &pb.DepositResponse{}
+
+	am := req.GetAmount()
+	wall := req.GetWallet()
+
+	err := c.AccountService.Deposit(wall, am)
 	if err != nil {
-		res.Ok = false
-		return
+		result.Ok = false
+		return result, err
 	}
-	res.Ok = true
-	return
+
+	result.Ok = true
+	return result, nil
 }
 
 func NewAccountContoller(accountService domain.Account) *AccountController {
-	return &AccountController{accountService: accountService}
+	return &AccountController{
+		AccountService: accountService,
+	}
 }

@@ -1,7 +1,5 @@
 package domain
 
-import "context"
-
 type Account interface {
-	Deposit(context.Context, string, float32) error
+	Deposit(string, float32) error
 }
