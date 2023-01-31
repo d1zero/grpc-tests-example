@@ -1,43 +1,12 @@
 package service
 
 import (
-	"context"
-	grpc2 "go-grpc-tests/internal/controller/grpc"
-	"go-grpc-tests/internal/repository"
+	"github.com/golang/mock/gomock"
+	"go-grpc-tests/internal/domain/repository/mocks"
+	"go-grpc-tests/internal/entity"
 	pb "go-grpc-tests/pkg/proto/bank/account"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/status"
-	"google.golang.org/grpc/test/bufconn"
-	"log"
-	"net"
 	"testing"
 )
-
-func dialer() func(context.Context, string) (net.Conn, error) {
-	listener := bufconn.Listen(1024 * 1024)
-
-	server := grpc.NewServer()
-
-	balances := map[string]float32{}
-
-	balances["1"] = 1
-
-	accountRepo := repository.NewAccountRepository(balances)
-	accountService := NewAccountService(accountRepo)
-
-	pb.RegisterDepositServiceServer(server, &grpc2.AccountController{UnimplementedDepositServiceServer: pb.UnimplementedDepositServiceServer{},
-		AccountService: accountService})
-
-	go func() {
-		if err := server.Serve(listener); err != nil {
-			log.Fatal(err)
-		}
-	}()
-
-	return func(context.Context, string) (net.Conn, error) {
-		return listener.Dial()
-	}
-}
 
 func TestDepositServer_Deposit(t *testing.T) {
 	tests := []struct {
@@ -45,52 +14,37 @@ func TestDepositServer_Deposit(t *testing.T) {
 		amount float32
 		wallet string
 		res    *pb.DepositResponse
-		errMsg string
+		errMsg error
 	}{
 		{
 			"invalid request with negative amount",
-			-1.11,
-			"1",
+			-22,
+			"2",
 			nil,
-			"amount cannot be negative",
+			entity.ErrAmountCannotBeNegative,
 		},
 		{
 			"valid request with non negative amount",
 			0.00,
 			"1",
 			&pb.DepositResponse{Ok: true},
-			"",
+			nil,
 		},
 	}
 
-	ctx := context.Background()
-
-	conn, err := grpc.DialContext(ctx, "", grpc.WithInsecure(), grpc.WithContextDialer(dialer()))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer conn.Close()
-
-	client := pb.NewDepositServiceClient(conn)
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			request := &pb.DepositRequest{Amount: tt.amount, Wallet: tt.wallet}
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-			response, err := client.Deposit(ctx, request)
+			accountRepo := mocks.NewMockAccount(ctrl)
+			accountService := NewAccountService(accountRepo)
+			accountRepo.EXPECT().Deposit(tt.wallet, tt.amount).Return(tt.errMsg).MaxTimes(1)
 
-			if response != nil {
-				if response.GetOk() != tt.res.GetOk() {
-					t.Error("response: expected", tt.res.GetOk(), "received", response.GetOk())
-				}
-			}
+			err := accountService.Deposit(tt.wallet, tt.amount)
 
-			if err != nil {
-				if er, ok := status.FromError(err); ok {
-					if er.Message() != tt.errMsg {
-						t.Error("error message: expected", tt.errMsg, "received", er.Message())
-					}
-				}
+			if err != tt.errMsg {
+				t.Error("error message: expected", tt.errMsg, "received", err)
 			}
 		})
 	}

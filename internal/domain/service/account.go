@@ -1,9 +1,9 @@
 package service
 
 import (
-	"fmt"
 	"go-grpc-tests/internal/domain"
 	"go-grpc-tests/internal/domain/repository"
+	"go-grpc-tests/internal/entity"
 )
 
 type Account struct {
@@ -12,7 +12,7 @@ type Account struct {
 
 func (s *Account) Deposit(wallet string, amount float32) error {
 	if amount < 0 {
-		return fmt.Errorf("amount cannot be negative")
+		return entity.ErrAmountCannotBeNegative
 	}
 	err := s.accountRepo.Deposit(wallet, amount)
 	return err
