@@ -4,7 +4,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"go-grpc-tests/internal/domain/repository/mocks"
 	"go-grpc-tests/internal/entity"
-	pb "go-grpc-tests/pkg/proto/bank/account"
 	"testing"
 )
 
@@ -13,21 +12,18 @@ func TestDepositServer_Deposit(t *testing.T) {
 		name   string
 		amount float32
 		wallet string
-		res    *pb.DepositResponse
 		errMsg error
 	}{
 		{
 			"invalid request with negative amount",
 			-22,
 			"2",
-			nil,
 			entity.ErrAmountCannotBeNegative,
 		},
 		{
 			"valid request with non negative amount",
 			0.00,
 			"1",
-			&pb.DepositResponse{Ok: true},
 			nil,
 		},
 	}
