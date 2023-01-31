@@ -1,26 +1,35 @@
 package repository
 
 import (
-	"fmt"
+	"github.com/jmoiron/sqlx"
 	"go-grpc-tests/internal/domain/repository"
+	"go-grpc-tests/internal/entity"
 )
 
 type AccountRepository struct {
-	balances map[string]float32
+	db *sqlx.DB
 }
 
-func (r *AccountRepository) Deposit(wallet string, amount float32) error {
-	_, ok := r.balances[wallet]
-	if !ok {
-		return fmt.Errorf("wallet not found")
+func (r *AccountRepository) Deposit(wallet string, amount float32) (err error) {
+	rows, err := r.db.Exec(`UPDATE main.accounts SET amount=amount+? WHERE wallet=?;`, amount, wallet)
+	if err != nil {
+		return entity.ErrInternalError
 	}
 
-	r.balances[wallet] += amount
+	rowsAff, err := rows.RowsAffected()
+	if err != nil {
+		return entity.ErrInternalError
+	}
+
+	if rowsAff == 0 {
+		return entity.ErrWalletNotFound
+	}
+
 	return nil
 }
 
 var _ repository.Account = &AccountRepository{}
 
-func NewAccountRepository(balances map[string]float32) *AccountRepository {
-	return &AccountRepository{balances}
+func NewAccountRepository(db *sqlx.DB) *AccountRepository {
+	return &AccountRepository{db}
 }

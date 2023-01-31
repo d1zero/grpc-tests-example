@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"fmt"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/rs/zerolog"
 	"go-grpc-tests/config"
 	"go-grpc-tests/internal/controller/grpc"
@@ -38,11 +40,17 @@ func Run() {
 
 	log.Debug().Msg("Loaded configuration")
 
-	balances := map[string]float32{}
+	db, err := sqlx.Open("sqlite3", "db/account.db")
+	if err != nil {
+		log.Fatal().Msg(err.Error())
+	}
 
-	balances["1"] = 1
+	err = db.Ping()
+	if err != nil {
+		log.Fatal().Msg(err.Error())
+	}
 
-	accountRepo := repository.NewAccountRepository(balances)
+	accountRepo := repository.NewAccountRepository(db)
 	accountService := service.NewAccountService(accountRepo)
 	accountController := grpc.NewAccountContoller(accountService)
 

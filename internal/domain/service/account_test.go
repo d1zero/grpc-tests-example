@@ -28,19 +28,19 @@ func TestDepositServer_Deposit(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
 			accountRepo := mocks.NewMockAccount(ctrl)
 			accountService := NewAccountService(accountRepo)
-			accountRepo.EXPECT().Deposit(tt.wallet, tt.amount).Return(tt.errMsg).MaxTimes(1)
+			accountRepo.EXPECT().Deposit(tc.wallet, tc.amount).Return(tc.errMsg).MaxTimes(1)
 
-			err := accountService.Deposit(tt.wallet, tt.amount)
+			err := accountService.Deposit(tc.wallet, tc.amount)
 
-			if err != tt.errMsg {
-				t.Error("error message: expected", tt.errMsg, "received", err)
+			if err != tc.errMsg {
+				t.Error("error message: expected", tc.errMsg, "received", err)
 			}
 		})
 	}
