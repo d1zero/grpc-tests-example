@@ -82,8 +82,8 @@ func TestDepositServer_Deposit(t *testing.T) {
 
 			response, err := client.Deposit(ctx, request)
 
-			if response != nil {
-				if response.GetOk() != tt.res.GetOk() {
+			if err != nil {
+				if err != tt.errMsg {
 					t.Error("response: expected", tt.res.GetOk(), "received", response.GetOk())
 				}
 			}
